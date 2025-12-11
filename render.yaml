@@ -1,0 +1,23 @@
+services:
+  - type: web
+    name: foodwaste-api
+    env: docker
+    region: frankfurt
+    plan: free
+    dockerfilePath: ./Dockerfile
+    autoDeploy: true
+    healthCheckPath: /health
+
+    envVars:
+      - key: DATABASE_URL
+        sync: false
+      - key: SENDGRID_API_KEY
+        sync: false
+      - key: SENDER_EMAIL
+        value: "foodwastzero@gmail.com"
+      - key: EDAMAM_APP_ID
+        sync: false
+      - key: EDAMAM_APP_KEY
+        sync: false
+      - key: SECRET_KEY
+        generateValue: true
