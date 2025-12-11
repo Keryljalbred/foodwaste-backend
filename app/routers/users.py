@@ -48,7 +48,8 @@ def login_user(form_data: OAuth2PasswordRequestForm = Depends(), db: Session = D
         print("❌ Mot de passe invalide OU utilisateur introuvable")
         raise HTTPException(status_code=401, detail="Identifiants invalides")
 
-    token = create_access_token(user.email)
+    token = create_access_token(str(user.id))
+
     return {"access_token": token, "token_type": "bearer"}
 
 #📋 Obtenir les informations de l'utilisateur courant
@@ -111,7 +112,7 @@ def delete_current_user(db: Session = Depends(get_db),
     return None
 
 #📋 Obtenir les informations de l'utilisateur
-@router.get("/{user_id}", response_model=UserOut)
+@router.get("/id/{user_id}", response_model=UserOut)
 def get_user(user_id: str, db: Session = Depends(get_db)):
     user = db.query(models.User).filter(models.User.id == user_id).first()
     if not user:
