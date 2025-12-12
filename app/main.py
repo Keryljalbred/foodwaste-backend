@@ -43,6 +43,8 @@ app.include_router(history.router)
 app.include_router(categories.router)
 app.include_router(external_data.router)
 
+
+
 @app.get("/")
 def root():
     return {"service": "fwz-api", "status": "ok"}
