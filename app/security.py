@@ -1,6 +1,7 @@
 from fastapi import Depends, HTTPException, status
 from fastapi.security import OAuth2PasswordBearer
 from jose import jwt, JWTError
+import uuid
 
 from .database import get_db
 from . import models
@@ -29,7 +30,8 @@ def get_current_user(
     except JWTError:
         raise credentials_exception
 
-    user = db.query(models.User).filter(models.User.id == user_id).first()
+    user = db.query(models.User).filter(models.User.id == uuid.UUID(user_id)).first()
+
 
     if user is None:
         raise credentials_exception

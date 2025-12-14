@@ -4,6 +4,8 @@ from fastapi.testclient import TestClient
 from app.main import app
 from app.database import Base, get_db
 from tests.database_test import engine_test, override_get_db
+import uuid
+
 
 Base.metadata.create_all(bind=engine_test)
 
