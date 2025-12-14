@@ -1,8 +1,8 @@
-def test_login_user():
+def test_login_user(client):
     response = client.post(
         "/users/login",
         data={
-            "username": "user@test.com",
+            "username": "test@test.com",
             "password": "password123"
         }
     )
