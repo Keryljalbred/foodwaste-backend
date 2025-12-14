@@ -1,16 +1,24 @@
-# backend/tests/conftest.py
-
 import pytest
 from fastapi.testclient import TestClient
+
 from app.main import app
+from app.database import Base, get_db
+from tests.database_test import engine_test, override_get_db
+
+# Créer les tables UNE FOIS pour les tests
+Base.metadata.create_all(bind=engine_test)
+
+# Override FastAPI dependency
+app.dependency_overrides[get_db] = override_get_db
+
 
 @pytest.fixture
 def client():
     return TestClient(app)
 
+
 @pytest.fixture
 def auth_headers(client):
-    # 1. Créer un utilisateur de test
     client.post(
         "/users/register",
         json={
@@ -19,7 +27,6 @@ def auth_headers(client):
         }
     )
 
-    # 2. Login pour récupérer le token
     response = client.post(
         "/users/login",
         data={
@@ -28,7 +35,7 @@ def auth_headers(client):
         }
     )
 
-    token = response.json().get("access_token")
+    token = response.json()["access_token"]
 
     return {
         "Authorization": f"Bearer {token}"
