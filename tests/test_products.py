@@ -8,5 +8,6 @@ def test_add_product(client, auth_headers):
         },
         headers=auth_headers
     )
+    print(response.json())
 
     assert response.status_code in [200, 201]
