@@ -3,7 +3,7 @@ from fastapi.middleware.cors import CORSMiddleware
 
 from .database import Base, engine
 from . import models
-from .routers import users, products, stats, admin, alerts, history, categories,external_data
+from .routers import users, products, stats, admin, alerts, history, categories, external_data
 
 app = FastAPI(title="FoodWaste Zero API")
 
@@ -27,9 +27,11 @@ app.add_middleware(
 )
 
 # ======================================
-# 🔥 Création des tables
+# 🔥 Création des tables (AU DÉMARRAGE)
 # ======================================
-Base.metadata.create_all(bind=engine)
+@app.on_event("startup")
+def on_startup():
+    Base.metadata.create_all(bind=engine)
 
 # ======================================
 # 🔥 Routes API
@@ -43,8 +45,6 @@ app.include_router(history.router)
 app.include_router(categories.router)
 app.include_router(external_data.router)
 
-
-
 @app.get("/")
 def root():
     return {"service": "fwz-api", "status": "ok"}
@@ -52,4 +52,3 @@ def root():
 @app.get("/health")
 def health():
     return {"status": "ok"}
-
