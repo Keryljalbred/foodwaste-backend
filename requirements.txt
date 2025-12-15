@@ -33,3 +33,5 @@ python-http-client
 
 pytest
 httpx
+prometheus-fastapi-instrumentator
+prometheus-fastapi-instrumentator

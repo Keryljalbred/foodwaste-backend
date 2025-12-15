@@ -4,8 +4,12 @@ from fastapi.middleware.cors import CORSMiddleware
 from .database import Base, engine
 from . import models
 from .routers import users, products, stats, admin, alerts, history, categories, external_data
+from prometheus_fastapi_instrumentator import Instrumentator
+
 
 app = FastAPI(title="FoodWaste Zero API")
+
+Instrumentator().instrument(app).expose(app)
 
 # ======================================
 # 🔥 CORS - DOIT ÊTRE DÉCLARÉ EN PREMIER
