@@ -83,6 +83,12 @@ def add_product(
     db: Session = Depends(get_db),
     current_user=Depends(get_current_user),
 ):
+    if payload.expiration_date:
+        if payload.expiration_date < date.today():
+            raise HTTPException(
+                status_code=400,
+                detail="La date de péremption ne peut pas être antérieure à aujourd’hui."
+            )
     product = models.Product(
         name=payload.name,
         quantity=payload.quantity,
