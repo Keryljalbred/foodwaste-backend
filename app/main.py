@@ -3,7 +3,7 @@ from fastapi.middleware.cors import CORSMiddleware
 
 from .database import Base, engine
 from . import models
-from .routers import users, products, stats, admin, alerts, history, categories, external_data
+from .routers import users, products, stats, admin, alerts, history, categories, external_data,barcode
 from prometheus_fastapi_instrumentator import Instrumentator
 
 
@@ -48,6 +48,8 @@ app.include_router(alerts.router)
 app.include_router(history.router)
 app.include_router(categories.router)
 app.include_router(external_data.router)
+app.include_router(barcode.router)
+
 
 @app.get("/")
 def root():
