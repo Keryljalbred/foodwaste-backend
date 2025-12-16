@@ -4,7 +4,8 @@ from datetime import date, datetime
 from calendar import monthrange
 
 from app.database import get_db
-from app.auth import get_current_user
+from ..security import get_current_user
+
 from app.models import Product, ConsumptionHistory, User
 
 router = APIRouter(prefix="/stats", tags=["stats"])
