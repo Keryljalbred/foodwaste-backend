@@ -443,11 +443,24 @@ def record_daily_stats(db: Session = Depends(get_db)):
    # ⬅️ adapte l'import à ton projet
 
 
+from datetime import date
+from fastapi import APIRouter, Depends
+from sqlalchemy.orm import Session
+import requests
+
+from app.database import get_db
+from app import models
+from app.utils.email import send_email
+
+router = APIRouter()
+
 @router.post("/internal/send_alerts", tags=["internal"])
 def send_risk_alerts(db: Session = Depends(get_db)):
     today = date.today()
     users = db.query(models.User).all()
     total_alerts_sent = 0
+
+    FRONTEND_URL = "https://foodwaste-zero.info"  # 🔁 adapte si besoin
 
     for user in users:
         products = (
@@ -460,67 +473,141 @@ def send_risk_alerts(db: Session = Depends(get_db)):
         for p in products:
             if not p.expiration_date:
                 continue
+
             days_left = (p.expiration_date - today).days
+
             if p.prediction == 1 or days_left <= 3:
                 risky.append(p)
 
         if not risky:
             continue
 
-        # On choisit le premier produit pour proposer des recettes
+        # 🔹 Produit principal pour suggestions de recettes
         main_product = risky[0]
 
-        # 🔵 Appel à ton API existante pour récupérer les recettes
+        # 🔹 Appel API recettes (sécurisé)
         try:
             r = requests.get(
                 f"http://api:8000/external-data/{main_product.id}",
                 timeout=5
             )
             recipes = r.json().get("recipes", [])
-        except:
+        except Exception:
             recipes = []
 
-        # 🔵 Construire la liste des produits à risque
+        # 🔹 Liste produits à risque
         product_list = "".join(
             f"<li><b>{p.name}</b> — reste {(p.expiration_date - today).days} jours</li>"
             for p in risky
         )
 
-        # 🔵 Construire la liste HTML des recettes
+        # 🔹 Liste recettes HTML (max 3)
         recipes_html = ""
-        for rec in recipes[:3]:  # max 3 recettes pour éviter un email trop long
+        for rec in recipes[:3]:
             recipes_html += f"""
-                <li>
-                    <b>{rec['title']}</b><br>
-                    <img src="{rec.get('thumbnail','')}" width="180" style="border-radius:8px;margin-top:4px"><br>
-                    <a href="{rec['link']}">Voir la recette</a>
-                </li><br>
+              <li style="margin-bottom:14px">
+                <b>{rec['title']}</b><br>
+                <img src="{rec.get('thumbnail','')}"
+                     width="180"
+                     style="border-radius:10px;margin-top:6px"><br>
+                <a href="{rec['link']}"
+                   style="color:#05a66b;font-weight:600">
+                   Voir la recette →
+                </a>
+              </li>
             """
 
-        # 🔵 Bouton "consommer maintenant"
-        consume_button = f"""
-            <a href="https://ton-frontend.com/consume/{main_product.id}"
-               style="display:inline-block;padding:12px 20px;
-               background:#05a66b;color:white;border-radius:8px;
-               text-decoration:none;font-weight:bold">
-               Consommer maintenant
-            </a>
-        """
-
-        # 🔵 Contenu final email
+        # 🔹 EMAIL HTML FINAL
         html_content = f"""
-        <h2>⚠️ Alerte FoodWaste Zero</h2>
-        <p>Vos produits suivants sont à risque :</p>
+        <div style="
+          font-family: Arial, Helvetica, sans-serif;
+          max-width: 600px;
+          margin: auto;
+          background: #ffffff;
+          border-radius: 14px;
+          overflow: hidden;
+          box-shadow: 0 10px 35px rgba(0,0,0,0.12);
+        ">
 
-        <ul>{product_list}</ul>
+          <div style="
+            background: linear-gradient(135deg, #05a66b, #00804f);
+            padding: 26px;
+            color: white;
+          ">
+            <h1 style="margin:0;font-size:22px">
+              ⚠️ Alerte FoodWaste Zero
+            </h1>
+            <p style="margin-top:8px;font-size:15px;opacity:0.95">
+              Des produits arrivent bientôt à expiration
+            </p>
+          </div>
 
-        <h3>💡 Idées de recettes pour utiliser <b>{main_product.name}</b></h3>
-        <ul>{recipes_html}</ul>
+          <div style="padding:26px;color:#003b24">
 
-        <h3>🚀 Action rapide</h3>
-        {consume_button}
+            <p style="font-size:15px;margin-top:0">
+              Bonne nouvelle 💚  
+              Vous pouvez encore <b>éviter le gaspillage</b> en agissant dès maintenant.
+            </p>
 
-        <p>Pensez à consulter l’application pour gérer votre frigo ❤️</p>
+            <p style="font-size:14px;margin-bottom:6px">
+              <b>Produits concernés :</b>
+            </p>
+
+            <ul style="padding-left:18px;font-size:14px">
+              {product_list}
+            </ul>
+
+            <hr style="border:none;border-top:1px solid #e5e7eb;margin:22px 0">
+
+            <h3 style="margin-bottom:10px;font-size:17px">
+              🍽️ Idées de recettes anti-gaspillage
+            </h3>
+
+            <p style="font-size:14px;opacity:0.85">
+              Utilisez <b>{main_product.name}</b> avec ces recettes simples :
+            </p>
+
+            <ul style="padding-left:0;list-style:none">
+              {recipes_html}
+            </ul>
+
+            <div style="text-align:center;margin:32px 0">
+              <a href="{FRONTEND_URL}/dashboard"
+                 style="
+                   display:inline-block;
+                   padding:14px 28px;
+                   background:#05a66b;
+                   color:white;
+                   border-radius:12px;
+                   text-decoration:none;
+                   font-size:15px;
+                   font-weight:bold;
+                   box-shadow:0 6px 20px rgba(5,166,107,0.35);
+                 ">
+                👉 Gérer mes produits
+              </a>
+            </div>
+
+            <p style="
+              font-size:13px;
+              opacity:0.7;
+              text-align:center;
+            ">
+              Chaque produit sauvé fait la différence 🌍  
+              Merci d’agir contre le gaspillage alimentaire.
+            </p>
+          </div>
+
+          <div style="
+            background:#f3fff9;
+            padding:16px;
+            text-align:center;
+            font-size:12px;
+            color:#6b7280
+          ">
+            FoodWaste Zero — Ensemble contre le gaspillage alimentaire
+          </div>
+        </div>
         """
 
         send_email(
@@ -530,5 +617,7 @@ def send_risk_alerts(db: Session = Depends(get_db)):
         )
 
         total_alerts_sent += 1
+
+ 
 
     return {"status": "ok", "emails_sent": total_alerts_sent}
